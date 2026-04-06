@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">KeepStrong</title>
+  <!-- Brand primary: matches tailwind theme.colors.primary -->
+  <rect width="64" height="64" rx="14" fill="#0C4A6E"/>
+  <!-- Custom K: single junction on the stem — strength / forward motion without stock “fitness” clipart -->
+  <path
+    d="M 18 14 L 18 50 M 18 28 L 44 14 M 18 28 L 44 50"
+    stroke="#FFFFFF"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
