@@ -41,7 +41,7 @@ async function getProgressData() {
   // Fetch all workout sessions
   const { data: workoutSessions } = await supabase
     .from("workout_sessions")
-    .select("id, user_id, workout_id, started_at, completed_at, notes, duration_minutes, energy_level, nausea_level, overall_feeling, is_dose_day, dose_day_offset, created_at, workouts(name)")
+    .select("id, user_id, workout_id, started_at, timer_started_at, completed_at, notes, duration_minutes, energy_level, nausea_level, overall_feeling, is_dose_day, dose_day_offset, created_at, workouts(name)")
     .eq("user_id", user.id)
     .not("completed_at", "is", null)
     .order("started_at", { ascending: true });

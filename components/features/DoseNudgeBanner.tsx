@@ -11,8 +11,8 @@ type Props = {
 const NUDGE_CONFIG = {
   injection_day: {
     icon: Calendar,
-    iconColor: "text-purple-500",
-    bg: "bg-purple-50 border-purple-100",
+    iconColor: "text-primary",
+    panel: "border-primary/20 bg-primary/5",
     title: "Injection day",
     message:
       "Today is your dose day. A lighter workout or rest is a great choice — your body is adjusting.",
@@ -21,8 +21,8 @@ const NUDGE_CONFIG = {
   },
   day_after: {
     icon: AlertTriangle,
-    iconColor: "text-amber-500",
-    bg: "bg-amber-50 border-amber-100",
+    iconColor: "text-warning",
+    panel: "border-warning/25 bg-warning/10",
     title: "Day after injection",
     message:
       "Many GLP-1 users feel lowest energy today. Your body is working hard — training lighter is smart, not weak.",
@@ -31,8 +31,8 @@ const NUDGE_CONFIG = {
   },
   two_days_after: {
     icon: Zap,
-    iconColor: "text-blue-500",
-    bg: "bg-blue-50 border-blue-100",
+    iconColor: "text-success",
+    panel: "border-success/25 bg-success/10",
     title: "Recovery day",
     message:
       "Energy typically improves today. You can train normally — listen to your body.",
@@ -48,17 +48,17 @@ export function DoseNudgeBanner({ status, medicationName }: Props) {
   const Icon = config.icon;
 
   return (
-    <div className={`${config.bg} border rounded-2xl p-4 mb-4`}>
+    <div className={`rounded-xl border p-4 ${config.panel}`}>
       <div className="flex items-start gap-3">
-        <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${config.iconColor}`} />
+        <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${config.iconColor}`} aria-hidden />
         <div>
-          <p className="font-semibold text-gray-900 text-sm">{config.title}</p>
+          <p className="text-sm font-semibold text-charcoal">{config.title}</p>
           {medicationName ? (
-            <p className="text-xs text-gray-500 mt-0.5">{medicationName}</p>
+            <p className="mt-0.5 text-xs text-slate">{medicationName}</p>
           ) : null}
-          <p className="text-sm text-gray-600 mt-0.5">{config.message}</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-charcoal/90">{config.message}</p>
           {config.workoutSuggestion ? (
-            <p className="text-xs text-gray-500 mt-1 italic">{config.workoutSuggestion}</p>
+            <p className="mt-1 text-xs text-slate italic">{config.workoutSuggestion}</p>
           ) : null}
         </div>
       </div>

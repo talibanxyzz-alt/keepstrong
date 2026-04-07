@@ -10,8 +10,6 @@ import {
   Scale,
   ChevronRight,
   Camera,
-  Lightbulb,
-  Sparkles,
   UtensilsCrossed,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -21,6 +19,7 @@ import MealTimingAlert from "@/components/features/MealTimingAlert";
 import { DoseDayBanner } from "@/components/features/DoseDayBanner";
 import { DoseNudgeBanner } from "@/components/features/DoseNudgeBanner";
 import { getDoseStatus } from "@/lib/dose/getDoseStatus";
+import { getDaysSinceDose } from "@/lib/utils/dose-day";
 import { HydrationTracker } from "@/components/features/HydrationTracker";
 import { SideEffectCheckIn } from "@/components/features/SideEffectCheckIn";
 import { usePostMealPrompts } from "@/hooks/usePostMealPrompts";
@@ -197,30 +196,39 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
   const doseStatus = getDoseStatus(profile.dose_day_of_week ?? null);
   const medicationLabel = profile.medication_type ?? profile.glp1_medication ?? undefined;
+  const todayDow = new Date().getDay();
+  const dosePhaseBannerVisible =
+    profile.dose_day_of_week !== null &&
+    getDaysSinceDose({
+      doseDay: profile.dose_day_of_week,
+      todayDayOfWeek: todayDow,
+    }) <= 2;
+  const showDoseNudge = doseStatus !== "normal" && !dosePhaseBannerVisible;
+
+  const lastMealLog = todayProteinLogs[0];
+  const lastMealTime =
+    lastMealLog?.logged_at != null
+      ? format(new Date(lastMealLog.logged_at), "h:mm a")
+      : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-200/40 via-canvas to-cloud">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <div className="min-h-screen bg-canvas">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
 
-        {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-6 shadow-card sm:p-8">
-          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/[0.07] blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-6 left-1/3 h-24 w-24 rounded-full bg-warning/[0.08] blur-xl" />
-          <div className="relative flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                Today
-              </p>
-              <h1 className="text-2xl font-bold tracking-tight text-charcoal sm:text-3xl">
-                {greeting}, {firstName}
-              </h1>
-              <p className="mt-1 text-sm text-slate">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
-            </div>
-          </div>
-        </div>
+        {/* Header — editorial, no decorative blurs */}
+        <header className="border-b border-line/80 pb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-charcoal sm:text-3xl">
+            {greeting}, {firstName}
+          </h1>
+          <p className="mt-1 text-sm text-slate">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
+          {lastMealTime ? (
+            <p className="mt-2 text-xs text-slate/80">Last meal logged at {lastMealTime}</p>
+          ) : null}
+        </header>
 
-        <DoseNudgeBanner status={doseStatus} medicationName={medicationLabel} />
+        {showDoseNudge ? (
+          <DoseNudgeBanner status={doseStatus} medicationName={medicationLabel} />
+        ) : null}
 
         {/* Alerts */}
         {showMealAlert && mealTiming.hoursSinceLastMeal > 0 && profile.id && (
@@ -244,63 +252,77 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           />
         )}
 
-        {/* Streak row */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-line/90 bg-surface p-5 shadow-card transition-shadow hover:shadow-card-hover sm:p-6">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning/15">
-                <Flame className="h-4 w-4 text-warning" />
+        {/* Single “this week at a glance” strip — both streaks, one surface */}
+        <section
+          className="rounded-xl border border-line bg-surface px-4 py-5 sm:px-6"
+          aria-label="Streaks and weekly summary"
+        >
+          <p className="mb-4 text-xs font-medium uppercase tracking-wide text-slate">This week at a glance</p>
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-stretch sm:gap-0">
+            <div className="flex flex-1 items-start gap-3 sm:pr-6">
+              <Flame className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-slate">Protein streak</p>
+                <p className="mt-0.5 text-2xl font-semibold tabular-nums text-charcoal">
+                  {streaks.proteinStreak}{" "}
+                  <span className="text-base font-normal text-slate">
+                    {streaks.proteinStreak === 1 ? "day" : "days"}
+                  </span>
+                </p>
+                {streaks.proteinStreak > 0 && streaks.proteinStreak < 7 && (
+                  <p className="mt-1 text-xs text-slate/70">{7 - streaks.proteinStreak} to 7-day milestone</p>
+                )}
+                {streaks.proteinStreak >= 7 && (
+                  <p className="mt-1 text-xs text-slate/70">Best run: {streaks.proteinBestStreak} days</p>
+                )}
               </div>
-              <span className="text-sm font-medium text-slate">Protein streak</span>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-4xl font-bold text-charcoal">{streaks.proteinStreak}</span>
-              <span className="text-slate">{streaks.proteinStreak === 1 ? 'day' : 'days'}</span>
+            <div className="hidden w-px shrink-0 bg-line sm:block" aria-hidden />
+            <div className="flex flex-1 items-start gap-3 sm:pl-6">
+              <Dumbbell className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-slate">Workout streak</p>
+                <p className="mt-0.5 text-2xl font-semibold tabular-nums text-charcoal">
+                  {streaks.workoutStreak}{" "}
+                  <span className="text-base font-normal text-slate">
+                    {streaks.workoutStreak === 1 ? "week" : "weeks"}
+                  </span>
+                </p>
+                {streaks.workoutStreak > 0 && streaks.workoutStreak < 4 && (
+                  <p className="mt-1 text-xs text-slate/70">{4 - streaks.workoutStreak} to 4-week milestone</p>
+                )}
+                {streaks.workoutStreak >= 4 && (
+                  <p className="mt-1 text-xs text-slate/70">Best run: {streaks.workoutBestStreak} weeks</p>
+                )}
+              </div>
             </div>
-            {streaks.proteinStreak > 0 && streaks.proteinStreak < 7 && (
-              <p className="text-xs text-slate/60 mt-2">{7 - streaks.proteinStreak} days to 7-day milestone</p>
-            )}
-            {streaks.proteinStreak >= 7 && (
-              <p className="text-xs text-slate/60 mt-2">Best: {streaks.proteinBestStreak} days</p>
-            )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-line/70 pt-4 text-sm">
             {streaks.proteinStreak === 0 && (
               <button
                 type="button"
                 onClick={() => setIsQuickAddOpen(true)}
-                className="mt-3 text-xs font-semibold text-primary hover:text-primary-hover"
+                className="font-medium text-primary hover:text-primary-hover"
               >
-                Log protein to start →
+                Log protein to start
               </button>
             )}
-          </div>
-
-          <div className="rounded-2xl border border-line/90 bg-surface p-5 shadow-card transition-shadow hover:shadow-card-hover sm:p-6">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                <Dumbbell className="h-4 w-4 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-slate">Workout streak</span>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-4xl font-bold text-charcoal">{streaks.workoutStreak}</span>
-              <span className="text-slate">{streaks.workoutStreak === 1 ? 'week' : 'weeks'}</span>
-            </div>
-            {streaks.workoutStreak > 0 && streaks.workoutStreak < 4 && (
-              <p className="text-xs text-slate/60 mt-2">{4 - streaks.workoutStreak} weeks to 4-week milestone</p>
-            )}
-            {streaks.workoutStreak >= 4 && (
-              <p className="text-xs text-slate/60 mt-2">Best: {streaks.workoutBestStreak} weeks</p>
-            )}
             {streaks.workoutStreak === 0 && (
-              <Link
-                href="/workouts"
-                className="mt-3 inline-block text-xs font-semibold text-primary hover:text-primary-hover"
-              >
-                Start a workout →
+              <Link href="/workouts" className="font-medium text-primary hover:text-primary-hover">
+                Start a workout
               </Link>
             )}
+            <Link href="/progress" className="text-slate hover:text-charcoal">
+              Full progress →
+            </Link>
           </div>
-        </div>
+        </section>
+
+        {/* Plain coach note — no icon tile */}
+        <aside className="rounded-lg border-l-4 border-l-charcoal/20 bg-surface px-4 py-3 sm:px-5">
+          <p className="text-xs font-medium text-slate">Note for today</p>
+          <p className="mt-1 text-sm leading-relaxed text-charcoal/90">{dailyTip}</p>
+        </aside>
 
         {/* Main content grid */}
         <div className="grid gap-6 lg:grid-cols-3">
@@ -308,10 +330,8 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           {/* Protein card — spans 2 cols */}
           <div className="rounded-2xl border border-line/90 bg-surface p-6 shadow-card md:col-span-2 lg:p-8">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-charcoal text-white shadow-sm">
-                  <Apple className="h-5 w-5" aria-hidden />
-                </div>
+              <div className="flex items-start gap-2.5">
+                <Apple className="mt-0.5 h-5 w-5 shrink-0 text-charcoal/70" aria-hidden />
                 <div>
                   <h2 className="text-lg font-semibold text-charcoal">Today&apos;s protein</h2>
                   <p className="text-xs text-slate">Stay ahead of muscle loss on GLP-1</p>
@@ -347,7 +367,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-cloud ring-1 ring-line/60">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-charcoal transition-all duration-500"
+                  className="h-full rounded-full bg-primary transition-all duration-500"
                   style={{ width: `${proteinPct}%` }}
                 />
               </div>
@@ -422,9 +442,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             {/* Workout card */}
             <div className="rounded-2xl border border-line/90 bg-surface p-5 shadow-card sm:p-6">
               <div className="mb-4 flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                  <Dumbbell className="h-4 w-4 text-primary" />
-                </div>
+                <Dumbbell className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                 <h2 className="font-semibold text-charcoal">Workouts</h2>
               </div>
               <div className="mb-1 flex items-baseline gap-1.5">
@@ -434,7 +452,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
               <p className="mb-4 text-xs text-slate">Target: 3 sessions</p>
               <div className="mb-4 h-2 overflow-hidden rounded-full bg-cloud ring-1 ring-line/60">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-500"
+                  className="h-full rounded-full bg-primary transition-all duration-500"
                   style={{ width: `${Math.min((weekWorkouts.length / 3) * 100, 100)}%` }}
                 />
               </div>
@@ -484,61 +502,42 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           </div>
         </div>
 
-        {/* Quick actions */}
+        {/* Quick actions — compact row, less “card grid” */}
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Quick actions</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <p className="mb-2 text-xs font-medium text-slate">Shortcuts</p>
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setIsQuickAddOpen(true)}
-              className="group flex flex-col items-center gap-2 rounded-2xl border border-line/90 bg-surface px-3 py-4 text-center shadow-card transition hover:border-primary/25 hover:shadow-card-hover"
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-charcoal text-white transition group-hover:scale-105">
-                <Apple className="h-5 w-5" aria-hidden />
-              </span>
-              <span className="text-xs font-semibold text-charcoal">Log meal</span>
+              <Apple className="h-4 w-4 text-charcoal/70" aria-hidden />
+              Log meal
             </button>
             <button
               type="button"
               onClick={() => router.push("/workouts")}
-              className="group flex flex-col items-center gap-2 rounded-2xl border border-line/90 bg-surface px-3 py-4 text-center shadow-card transition hover:border-primary/25 hover:shadow-card-hover"
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary transition group-hover:scale-105">
-                <Dumbbell className="h-5 w-5" aria-hidden />
-              </span>
-              <span className="text-xs font-semibold text-charcoal">Start workout</span>
+              <Dumbbell className="h-4 w-4 text-primary" aria-hidden />
+              Workout
             </button>
             <button
               type="button"
               onClick={() => router.push("/progress")}
-              className="group flex flex-col items-center gap-2 rounded-2xl border border-line/90 bg-surface px-3 py-4 text-center shadow-card transition hover:border-primary/25 hover:shadow-card-hover"
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cloud text-charcoal ring-1 ring-line transition group-hover:scale-105">
-                <Scale className="h-5 w-5" aria-hidden />
-              </span>
-              <span className="text-xs font-semibold text-charcoal">Log weight</span>
+              <Scale className="h-4 w-4 text-slate" aria-hidden />
+              Weight
             </button>
             <button
               type="button"
               onClick={() => router.push("/photos")}
-              className="group flex flex-col items-center gap-2 rounded-2xl border border-line/90 bg-surface px-3 py-4 text-center shadow-card transition hover:border-primary/25 hover:shadow-card-hover"
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-warning/15 text-warning transition group-hover:scale-105">
-                <Camera className="h-5 w-5" aria-hidden />
-              </span>
-              <span className="text-xs font-semibold text-charcoal">Add photo</span>
+              <Camera className="h-4 w-4 text-slate" aria-hidden />
+              Photo
             </button>
-          </div>
-        </div>
-
-        {/* Coach tip */}
-        <div className="flex gap-4 rounded-2xl border border-primary/15 bg-primary/[0.06] p-5 shadow-sm sm:p-6">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-            <Lightbulb className="h-5 w-5 text-primary" aria-hidden />
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-primary">Today&apos;s tip</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-charcoal/90">{dailyTip}</p>
           </div>
         </div>
 

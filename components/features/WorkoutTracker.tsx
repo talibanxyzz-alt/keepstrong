@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Check, Timer, Trophy } from "lucide-react";
+import { X, Check, Timer, Trophy, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -31,6 +31,7 @@ interface WorkoutSession {
   id: string;
   workout_id: string;
   started_at: string;
+  timer_started_at: string | null;
 }
 
 interface LoggedSet {
@@ -63,6 +64,8 @@ export default function WorkoutTracker({
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [lastSets, setLastSets] = useState<Record<string, LastSetData>>({});
+  const [timerStartedAt, setTimerStartedAt] = useState<string | null>(session.timer_started_at);
+  const [isStartingTimer, setIsStartingTimer] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -77,16 +80,43 @@ export default function WorkoutTracker({
   }, [exercises, userId]);
   const currentExercise = exercises[currentExerciseIndex];
 
-  // Calculate elapsed time
   useEffect(() => {
-    const startTime = new Date(session.started_at).getTime();
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      setElapsedTime(elapsed);
-    }, 1000);
+    setTimerStartedAt(session.timer_started_at);
+  }, [session.timer_started_at]);
 
+  // Elapsed workout time (only after user taps Start workout on this screen)
+  useEffect(() => {
+    if (!timerStartedAt) {
+      setElapsedTime(0);
+      return;
+    }
+    const startTime = new Date(timerStartedAt).getTime();
+    const tick = () => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [session.started_at]);
+  }, [timerStartedAt]);
+
+  const handleStartWorkoutTimer = async () => {
+    setIsStartingTimer(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("workout_sessions")
+      .update({ timer_started_at: now })
+      .eq("id", session.id);
+
+    if (error) {
+      toast.error(`Could not start timer: ${error.message}`);
+      setIsStartingTimer(false);
+      return;
+    }
+
+    setTimerStartedAt(now);
+    setIsStartingTimer(false);
+    toast.success("Timer started — good workout!");
+  };
 
   // Get sets logged for an exercise
   const getSetsForExercise = (exerciseId: string) => {
@@ -171,10 +201,12 @@ export default function WorkoutTracker({
     setIsFinishing(true);
 
     try {
+      const durationMinutes = Math.max(1, Math.ceil(elapsedTime / 60));
       const { error } = await supabase
         .from("workout_sessions")
         .update({
           completed_at: new Date().toISOString(),
+          duration_minutes: durationMinutes,
         })
         .eq("id", session.id);
 
@@ -232,10 +264,10 @@ export default function WorkoutTracker({
           <div className="mb-3 flex items-center justify-between">
             <h1 className="text-lg font-semibold text-charcoal sm:text-xl">{workout.name}</h1>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm" title={timerStartedAt ? undefined : "Timer starts after you tap Start workout"}>
                 <Timer className="h-4 w-4 text-slate" />
                 <span className="font-mono font-semibold text-charcoal">
-                  {formatTime(elapsedTime)}
+                  {timerStartedAt ? formatTime(elapsedTime) : "0:00"}
                 </span>
               </div>
               <button
@@ -267,6 +299,30 @@ export default function WorkoutTracker({
         </div>
       </div>
 
+      {!timerStartedAt && (
+        <div className="mx-4 mt-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-5 shadow-sm md:mx-6 lg:mx-8">
+          <p className="text-center text-sm text-slate">
+            Set your weights and equipment. When you&apos;re ready, start the session timer — setup time won&apos;t count.
+          </p>
+          <button
+            type="button"
+            onClick={handleStartWorkoutTimer}
+            disabled={isStartingTimer}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-charcoal py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-charcoal/90 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Start workout timer"
+          >
+            {isStartingTimer ? (
+              <>Starting…</>
+            ) : (
+              <>
+                <Play className="h-4 w-4" />
+                Start workout
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Exercise List */}
       <div className="py-6">
         <div className="space-y-4">
@@ -286,6 +342,7 @@ export default function WorkoutTracker({
                 onSetLogged={handleSetLogged}
                 onSelect={() => setCurrentExerciseIndex(index)}
                 lastSession={lastSets[exercise.id]}
+                loggingLocked={!timerStartedAt}
               />
             );
           })}

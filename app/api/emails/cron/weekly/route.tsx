@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { resend, SENDER_EMAIL, SENDER_NAME } from "@/lib/email/client";
+import { getResend, SENDER_EMAIL, SENDER_NAME } from "@/lib/email/client";
 import { buildEmailUnsubscribeUrl } from "@/lib/email/unsubscribe-url";
 import { getWeeklyStats } from "@/lib/emails/getWeeklyStats";
 import { WeeklyDigestEmail } from "@/emails/WeeklyDigest";
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
           <WeeklyDigestEmail stats={stats} unsubscribeUrl={unsubscribeUrl} />
         );
 
-        await resend.emails.send({
+        await getResend().emails.send({
           from: `${SENDER_NAME} <${SENDER_EMAIL}>`,
           to: [stats.userEmail],
           subject: "Your KeepStrong week in review",

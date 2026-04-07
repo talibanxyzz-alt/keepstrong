@@ -309,6 +309,8 @@ export type Database = {
           overall_feeling: string | null
           is_dose_day: boolean | null
           dose_day_offset: number | null
+          // Migration 024
+          timer_started_at: string | null
         }
         Insert: {
           id?: string
@@ -325,6 +327,8 @@ export type Database = {
           overall_feeling?: string | null
           is_dose_day?: boolean | null
           dose_day_offset?: number | null
+          // Migration 024
+          timer_started_at?: string | null
         }
         Update: {
           id?: string
@@ -341,6 +345,8 @@ export type Database = {
           overall_feeling?: string | null
           is_dose_day?: boolean | null
           dose_day_offset?: number | null
+          // Migration 024
+          timer_started_at?: string | null
         }
         Relationships: [
           {

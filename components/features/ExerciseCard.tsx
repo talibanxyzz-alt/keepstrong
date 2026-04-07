@@ -36,6 +36,8 @@ interface ExerciseCardProps {
   onSetLogged: (set: LoggedSet) => void;
   onSelect: () => void;
   lastSession?: LastSetData;
+  /** When true, user must tap "Start workout" on the tracker before logging sets */
+  loggingLocked?: boolean;
 }
 
 export default function ExerciseCard({
@@ -47,6 +49,7 @@ export default function ExerciseCard({
   onSetLogged,
   onSelect,
   lastSession,
+  loggingLocked = false,
 }: ExerciseCardProps) {
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
@@ -59,6 +62,10 @@ export default function ExerciseCard({
 
   const handleLogSet = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loggingLocked) {
+      toast.error("Tap Start workout above to begin timing and logging sets.");
+      return;
+    }
 
     const weightNum = parseFloat(weight);
     const repsNum = parseInt(reps);
@@ -232,6 +239,11 @@ export default function ExerciseCard({
           {/* Log Set Form */}
           {setsRemaining > 0 && (
             <form onSubmit={handleLogSet} className="space-y-4">
+              {loggingLocked ? (
+                <p className="rounded-lg border border-dashed border-line-strong bg-cloud/60 px-4 py-3 text-center text-sm text-slate">
+                  Tap <strong className="text-charcoal">Start workout</strong> above to begin the timer and log sets.
+                </p>
+              ) : null}
               <div>
                 <label className="mb-2 block text-sm font-semibold text-charcoal">
                   Set {nextSetNumber} of {exercise.target_sets}
@@ -248,8 +260,8 @@ export default function ExerciseCard({
                       onChange={(e) => setWeight(e.target.value)}
                       className="w-full rounded-md border border-line-strong bg-surface px-4 py-3 text-lg font-mono font-semibold text-charcoal placeholder:text-slate/60 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-20"
                       placeholder="20"
-                      disabled={isLogging}
-                      autoFocus
+                      disabled={isLogging || loggingLocked}
+                      autoFocus={!loggingLocked}
                     />
                   </div>
                   <div>
@@ -260,7 +272,7 @@ export default function ExerciseCard({
                       onChange={(e) => setReps(e.target.value)}
                       className="w-full rounded-md border border-line-strong bg-surface px-4 py-3 text-lg font-mono font-semibold text-charcoal placeholder:text-slate/60 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-20"
                       placeholder={repsDisplay.toString()}
-                      disabled={isLogging}
+                      disabled={isLogging || loggingLocked}
                     />
                   </div>
                 </div>
@@ -268,7 +280,7 @@ export default function ExerciseCard({
 
               <button
                 type="submit"
-                disabled={isLogging}
+                disabled={isLogging || loggingLocked}
                 className="w-full rounded-lg bg-charcoal px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-charcoal/90 disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg"
               >
                 {isLogging ? "Logging..." : "Log Set"}

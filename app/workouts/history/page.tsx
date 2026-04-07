@@ -17,7 +17,7 @@ export default async function WorkoutHistoryPage() {
     .from("workout_sessions")
     .select(
       `
-      id, workout_id, started_at, completed_at, duration_minutes, energy_level, notes,
+      id, workout_id, started_at, timer_started_at, completed_at, duration_minutes, energy_level, notes,
       workouts(name)
     `
     )
@@ -116,11 +116,14 @@ export default async function WorkoutHistoryPage() {
         <div className="space-y-4">
           {sessions.map((session, sessionIndex) => {
             const workout = session.workouts as { name: string } | null;
+            const durationStart =
+              session.timer_started_at ?? session.started_at;
             const duration = session.duration_minutes
               ? `${session.duration_minutes} min`
-              : session.completed_at && session.started_at
+              : session.completed_at && durationStart
                 ? `${Math.round(
-                    (new Date(session.completed_at).getTime() - new Date(session.started_at).getTime()) /
+                    (new Date(session.completed_at).getTime() -
+                      new Date(durationStart).getTime()) /
                       60000
                   )} min`
                 : null;

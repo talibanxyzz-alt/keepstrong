@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { resend, SENDER_EMAIL, SENDER_NAME } from '@/lib/email/client';
+import { getResend, SENDER_EMAIL, SENDER_NAME } from '@/lib/email/client';
 import { buildEmailUnsubscribeUrl } from '@/lib/email/unsubscribe-url';
 import { Day2ReminderEmail } from '@/lib/email/templates';
 import { render } from '@react-email/components';
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
           />
         );
 
-        await resend.emails.send({
+        await getResend().emails.send({
           from: `${SENDER_NAME} <${SENDER_EMAIL}>`,
           to: [user.email],
           subject: `Did you log your protein today, ${user.full_name || 'there'}? 🍗`,

@@ -13,7 +13,7 @@ export default async function ActiveWorkoutPage() {
   // Get active (incomplete) session
   const { data: session } = await supabase
     .from("workout_sessions")
-    .select("id, workout_id, started_at")
+    .select("id, workout_id, started_at, timer_started_at")
     .eq("user_id", user.id)
     .is("completed_at", null)
     .order("started_at", { ascending: false })
@@ -67,7 +67,12 @@ export default async function ActiveWorkoutPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <WorkoutTracker
-        session={{ ...session, workout_id: session.workout_id!, started_at: session.started_at! }}
+        session={{
+          ...session,
+          workout_id: session.workout_id!,
+          started_at: session.started_at!,
+          timer_started_at: session.timer_started_at,
+        }}
         workout={workout as { id: string; name: string; exercises: { id: string; name: string; description: string | null; image_url: string | null; target_sets: number; target_reps_min: number; target_reps_max: number; rest_seconds: number; order_in_workout: number }[] }}
         loggedSets={loggedSets || []}
         userId={user.id}

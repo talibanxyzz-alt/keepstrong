@@ -67,21 +67,12 @@ test.describe('Workout Flow', () => {
     // Should redirect to active workout page
     await expect(page).toHaveURL('/workouts/active', { timeout: 5000 });
 
-    // Should see workout options
-    await expect(page.locator('h1, h2')).toContainText(/Start a Workout|Workout|Active/i);
+    // Begin session timer (setup phase: timer was not running until this tap)
+    await page.getByRole('button', { name: 'Start workout' }).click();
 
-    // Find and click first workout button
-    const startWorkoutButton = page.locator('button:has-text("Start Workout")').first().or(
-      page.locator('button').filter({ hasText: /Start/i }).first()
-    );
-    
-    await expect(startWorkoutButton).toBeVisible({ timeout: 3000 });
-    await startWorkoutButton.click();
-
-    // Should see workout tracker with exercises
-    // Wait for exercise to appear
+    // Should see workout tracker with exercises / log form
     await expect(
-      page.locator('text=/Set|Exercise|Reps|Weight/i').first()
+      page.locator('text=/Set|Exercise|Reps|Weight|Log Set/i').first()
     ).toBeVisible({ timeout: 5000 });
   });
 
@@ -103,12 +94,11 @@ test.describe('Workout Flow', () => {
     );
     await startButton.click();
 
-    // Wait for redirect and start workout
+    // Wait for redirect, then start session timer on active workout page
     await expect(page).toHaveURL('/workouts/active', { timeout: 5000 });
-    const startWorkoutButton = page.locator('button:has-text("Start Workout")').first();
-    await startWorkoutButton.click();
+    await page.getByRole('button', { name: 'Start workout' }).click();
 
-    // Wait for workout tracker to load
+    // Wait for workout tracker to load (inputs enabled after timer start)
     await page.waitForSelector('input[type="number"]', { timeout: 5000 });
 
     // Log first set
@@ -166,12 +156,9 @@ test.describe('Workout Flow', () => {
     );
     await startButton.click();
 
-    // Start workout
     await expect(page).toHaveURL('/workouts/active', { timeout: 5000 });
-    const startWorkoutButton = page.locator('button:has-text("Start Workout")').first();
-    await startWorkoutButton.click();
+    await page.getByRole('button', { name: 'Start workout' }).click();
 
-    // Wait for workout tracker
     await page.waitForSelector('input[type="number"]', { timeout: 5000 });
 
     // Log sets for all exercises (simplified - just log a few sets)

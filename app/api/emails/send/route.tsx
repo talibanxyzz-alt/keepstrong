@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { resend, SENDER_EMAIL, SENDER_NAME } from '@/lib/email/client';
+import { getResend, SENDER_EMAIL, SENDER_NAME } from '@/lib/email/client';
 import { buildEmailUnsubscribeUrl } from '@/lib/email/unsubscribe-url';
 import { WelcomeEmail, Day2ReminderEmail, Week1ProgressEmail } from '@/lib/email/templates';
 import { render } from '@react-email/components';
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send the email
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `${SENDER_NAME} <${SENDER_EMAIL}>`,
       to: [email],
       subject: getEmailSubject(type, full_name ?? undefined),
