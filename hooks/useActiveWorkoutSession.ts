@@ -4,10 +4,15 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 /** True when the user has an in-progress workout session (not completed). */
-export function useActiveWorkoutSession(pathname: string | null) {
+export function useActiveWorkoutSession(pathname: string | null, enabled = true) {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      setActive(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function check() {
@@ -38,7 +43,7 @@ export function useActiveWorkoutSession(pathname: string | null) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [pathname]);
+  }, [pathname, enabled]);
 
   return active;
 }

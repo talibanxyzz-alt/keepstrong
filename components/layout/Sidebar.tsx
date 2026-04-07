@@ -104,6 +104,21 @@ function isMoreTabRoute(pathname: string | null): boolean {
   return MORE_TAB_ROUTES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+/** No app chrome / no Supabase polling — same routes where Sidebar returns null. */
+function isPublicMarketingPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathname === '/' ||
+    pathname === '/auth/login' ||
+    pathname === '/auth/signup' ||
+    pathname.startsWith('/auth/') ||
+    pathname === '/onboarding' ||
+    pathname === '/terms' ||
+    pathname === '/privacy' ||
+    pathname === '/unsubscribed'
+  );
+}
+
 const MOBILE_TAB_ITEMS: NavItem[] = [
   NAV_GROUPS[0].items[0],
   NAV_GROUPS[0].items[1],
@@ -122,8 +137,9 @@ export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState('User');
   const [userEmail, setUserEmail] = useState('');
-  const notifications = useNotificationCounts();
-  const hasLiveWorkout = useActiveWorkoutSession(pathname ?? null);
+  const pollSupabase = !isPublicMarketingPath(pathname);
+  const notifications = useNotificationCounts(pollSupabase);
+  const hasLiveWorkout = useActiveWorkoutSession(pathname ?? null, pollSupabase);
 
   const navItemsWithBadges = useMemo(() => {
     return NAV_GROUPS.map((group) => ({
@@ -136,15 +152,7 @@ export default function Sidebar() {
     }));
   }, [notifications.achievements]);
 
-  const isAuthPage =
-    pathname === '/' ||
-    pathname === '/auth/login' ||
-    pathname === '/auth/signup' ||
-    pathname?.startsWith('/auth/') ||
-    pathname === '/onboarding' ||
-    pathname === '/terms' ||
-    pathname === '/privacy' ||
-    pathname === '/unsubscribed';
+  const isAuthPage = isPublicMarketingPath(pathname);
 
   const moreTabActive = isMoreTabRoute(pathname ?? null) || isMobileMenuOpen;
 

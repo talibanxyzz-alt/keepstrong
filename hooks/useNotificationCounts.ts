@@ -3,10 +3,16 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-export function useNotificationCounts() {
+/** Pass `false` on marketing/auth shell routes so we don’t hit Supabase (avoids noisy refresh errors on `/`, etc.). */
+export function useNotificationCounts(enabled = true) {
   const [counts, setCounts] = useState({ achievements: 0 });
 
   useEffect(() => {
+    if (!enabled) {
+      setCounts({ achievements: 0 });
+      return;
+    }
+
     async function load() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -23,7 +29,7 @@ export function useNotificationCounts() {
     load();
     const interval = setInterval(load, 60000); // Refresh every minute
     return () => clearInterval(interval);
-  }, []);
+  }, [enabled]);
 
   return counts;
 }
