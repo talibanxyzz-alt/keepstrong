@@ -562,7 +562,7 @@ export default function Sidebar() {
         className="fixed bottom-2 z-40 rounded-2xl border border-stone-200/90 bg-[#faf9f7]/95 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-1.5 shadow-[0_8px_28px_-8px_rgba(28,25,23,0.08)] backdrop-blur-md lg:hidden left-[max(0.75rem,env(safe-area-inset-left,0px))] right-[max(0.75rem,env(safe-area-inset-right,0px))] md:left-1/2 md:right-auto md:w-[min(26rem,calc(100vw-1.5rem-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)))] md:-translate-x-1/2"
         aria-label="Primary"
       >
-        <ul className="flex min-h-[3.25rem] items-stretch justify-between gap-0.5 px-1 sm:gap-1 sm:px-2 md:px-2.5">
+        <ul className="flex min-h-[3.5rem] items-stretch justify-between gap-0.5 px-1 sm:gap-1 sm:px-2 md:px-2.5">
           {MOBILE_TAB_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = isItemActive(pathname, item);
@@ -572,7 +572,7 @@ export default function Sidebar() {
                 <Link
                   href={item.href}
                   className={`
-                    relative flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 rounded-xl py-2 motion-safe:transition-colors motion-safe:duration-200
+                    relative flex min-h-12 min-w-[3rem] flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 touch-manipulation motion-safe:transition-colors motion-safe:duration-200 active:opacity-90
                     ${isActive ? 'text-primary' : 'text-stone-600 hover:bg-stone-100/90'}
                     ${focusRingWarm}
                   `}
@@ -584,7 +584,7 @@ export default function Sidebar() {
                         isActive ? 'bg-primary/12 text-primary shadow-sm' : 'text-stone-600'
                       }`}
                     >
-                      <Icon className={`h-6 w-6 ${isActive ? 'stroke-[2.25px]' : ''}`} />
+                      <Icon className={`h-6 w-6 ${isActive ? 'stroke-[2.25px]' : ''}`} aria-hidden />
                     </span>
                     {isWorkouts && hasLiveWorkout && (
                       <span
@@ -594,7 +594,7 @@ export default function Sidebar() {
                     )}
                   </span>
                   <span
-                    className={`max-w-full truncate px-0.5 text-[10px] ${isActive ? 'font-semibold' : 'font-medium text-stone-600'}`}
+                    className={`max-w-full truncate px-0.5 text-[11px] leading-tight sm:text-xs ${isActive ? 'font-semibold' : 'font-medium text-stone-600'}`}
                   >
                     {item.label === 'Dose calendar' ? 'Dose' : item.label.split(' ')[0]}
                   </span>
@@ -607,7 +607,7 @@ export default function Sidebar() {
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
               className={`
-                flex min-h-[2.75rem] w-full flex-col items-center justify-center gap-0.5 rounded-xl py-2 motion-safe:transition-colors motion-safe:duration-200
+                flex min-h-12 min-w-[3rem] w-full touch-manipulation flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 motion-safe:transition-colors motion-safe:duration-200 active:opacity-90
                 ${moreTabActive ? 'text-primary' : 'text-stone-600 hover:bg-stone-100/90'}
                 ${focusRingWarm}
               `}
@@ -619,10 +619,10 @@ export default function Sidebar() {
                   moreTabActive ? 'bg-primary/12 text-primary shadow-sm' : ''
                 }`}
               >
-                <MoreHorizontal className={`h-6 w-6 ${moreTabActive ? 'stroke-[2.25px]' : ''}`} />
+                <MoreHorizontal className={`h-6 w-6 ${moreTabActive ? 'stroke-[2.25px]' : ''}`} aria-hidden />
               </span>
               <span
-                className={`text-[10px] ${moreTabActive ? 'font-semibold' : 'font-medium text-stone-600'}`}
+                className={`text-[11px] leading-tight sm:text-xs ${moreTabActive ? 'font-semibold' : 'font-medium text-stone-600'}`}
               >
                 More
               </span>

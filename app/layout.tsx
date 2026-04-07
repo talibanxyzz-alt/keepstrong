@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { Toaster } from "sonner";
+import { AppToaster } from "@/components/ui/AppToaster";
 import { Analytics } from "@vercel/analytics/react";
 import Sidebar from "@/components/layout/Sidebar";
 import MainLayout from "@/components/layout/MainLayout";
@@ -91,7 +91,7 @@ export default function RootLayout({
           <Sidebar />
           <MainLayout>{children}</MainLayout>
         </SidebarLayoutProvider>
-        <Toaster position="top-right" richColors />
+        <AppToaster />
         <Analytics />
       </body>
     </html>

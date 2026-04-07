@@ -212,8 +212,8 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
       : null;
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+    <>
+    <div className="mx-auto w-full max-w-6xl space-y-5 py-4 sm:space-y-6 sm:py-6 lg:py-8">
 
         {/* Header — editorial, no decorative blurs */}
         <header className="border-b border-line/80 pb-6">
@@ -328,7 +328,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         <div className="grid gap-6 lg:grid-cols-3">
 
           {/* Protein card — spans 2 cols */}
-          <div className="rounded-2xl border border-line/90 bg-surface p-6 shadow-card md:col-span-2 lg:p-8">
+          <div className="rounded-2xl border border-line/90 bg-surface p-4 shadow-card sm:p-6 md:col-span-2 lg:p-8">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-2.5">
                 <Apple className="mt-0.5 h-5 w-5 shrink-0 text-charcoal/70" aria-hidden />
@@ -340,7 +340,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
               <button
                 type="button"
                 onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-charcoal px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-charcoal/90"
+                className="inline-flex min-h-11 shrink-0 touch-manipulation items-center justify-center gap-2 rounded-xl bg-charcoal px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-charcoal/90 active:opacity-90"
               >
                 {isQuickAddOpen ? (
                   <>
@@ -509,7 +509,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             <button
               type="button"
               onClick={() => setIsQuickAddOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
+              className="inline-flex min-h-11 touch-manipulation items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50 active:opacity-90"
             >
               <Apple className="h-4 w-4 text-charcoal/70" aria-hidden />
               Log meal
@@ -517,7 +517,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             <button
               type="button"
               onClick={() => router.push("/workouts")}
-              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
+              className="inline-flex min-h-11 touch-manipulation items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50 active:opacity-90"
             >
               <Dumbbell className="h-4 w-4 text-primary" aria-hidden />
               Workout
@@ -525,7 +525,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             <button
               type="button"
               onClick={() => router.push("/progress")}
-              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
+              className="inline-flex min-h-11 touch-manipulation items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50 active:opacity-90"
             >
               <Scale className="h-4 w-4 text-slate" aria-hidden />
               Weight
@@ -533,7 +533,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             <button
               type="button"
               onClick={() => router.push("/photos")}
-              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50"
+              className="inline-flex min-h-11 touch-manipulation items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-charcoal transition hover:border-charcoal/20 hover:bg-cloud/50 active:opacity-90"
             >
               <Camera className="h-4 w-4 text-slate" aria-hidden />
               Photo
@@ -541,7 +541,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           </div>
         </div>
 
-      </div>
+    </div>
 
       {pendingPrompts.length > 0 && (
         <PostMealRatingPrompt
@@ -557,6 +557,6 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           onClose={handleAchievementClose}
         />
       )}
-    </div>
+    </>
   );
 }

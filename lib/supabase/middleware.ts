@@ -55,13 +55,11 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Use getSession (reads cookie locally, no network call) in middleware for
-  // routing decisions only. Individual server components use getUser() when
-  // they need a verified server-side check.
+  // getUser() validates the JWT with Supabase (recommended over getSession here,
+  // which only reads cookies and triggers console warnings on the server).
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Protected routes check
   const isProtectedRoute =

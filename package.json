@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "dev:localhost": "next dev",
+    "dev:webpack": "next dev --hostname 0.0.0.0 --webpack",
     "dev:clean": "rm -rf .next && next dev --hostname 0.0.0.0",
     "dev:turbo": "next dev --hostname 0.0.0.0 --turbo",
     "build": "next build",
