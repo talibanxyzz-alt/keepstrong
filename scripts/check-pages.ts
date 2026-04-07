@@ -1,18 +1,28 @@
 /**
  * Creates a test account, signs in, then hits every protected page
  * and reports status codes + any error output.
+ *
+ * Loads secrets from `.env.local` — never commit keys into this file.
  */
+import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://uvsrptflpaqrzddhnhwz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2c3JwdGZscGFxcnpkZGhuaHd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzM1NjYsImV4cCI6MjA4ODc0OTU2Nn0.9kA-RM527sStQW8744ELWDvdK20aQMB1B4X6SIns_xk';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2c3JwdGZscGFxcnpkZGhuaHd6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzE3MzU2NiwiZXhwIjoyMDg4NzQ5NTY2fQ.nR0Nwswe0bGA_VgO_Pf5Cj-xkQMUM1nEkY064olBmaw';
-const BASE_URL = 'http://localhost:3001';
+config({ path: '.env.local' });
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const BASE_URL = process.env.CHECK_PAGES_BASE_URL ?? 'http://localhost:3001';
 
 const TEST_EMAIL = 'test-audit@keepstrong.dev';
 const TEST_PASSWORD = 'TestPass123!';
 
-const PROJECT_REF = 'uvsrptflpaqrzddhnhwz';
+function projectRefFromSupabaseUrl(url: string): string {
+  const host = new URL(url).hostname;
+  const m = /^([^.]+)\.supabase\.co$/i.exec(host);
+  if (!m) throw new Error(`Could not parse project ref from ${url}`);
+  return m[1];
+}
 
 const PAGES = [
   '/dashboard',
@@ -29,6 +39,15 @@ const PAGES = [
 ];
 
 async function main() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SERVICE_ROLE_KEY) {
+    console.error(
+      'Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY (e.g. in .env.local).'
+    );
+    process.exit(1);
+  }
+
+  const PROJECT_REF = projectRefFromSupabaseUrl(SUPABASE_URL);
+
   // 1. Create test user via admin API (bypasses email confirmation)
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
