@@ -699,3 +699,153 @@ COMMENT ON COLUMN public.profiles.marketing_emails IS 'Optional marketing conten
 
 -- 022: Expo push token (mobile app registers via API)
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS expo_push_token text;
+
+-- =============================================================================
+-- 014_add_email_logs.sql (was missing from combined file)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS public.email_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  email_type TEXT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  status TEXT NOT NULL DEFAULT 'sent',
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_email_logs_user_id ON public.email_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_logs_email_type ON public.email_logs(email_type);
+CREATE INDEX IF NOT EXISTS idx_email_logs_sent_at ON public.email_logs(sent_at);
+ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own email logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Service role can manage email logs" ON public.email_logs;
+CREATE POLICY "Users can view own email logs"
+  ON public.email_logs FOR SELECT
+  USING (auth.uid() = user_id);
+CREATE POLICY "Service role can manage email logs"
+  ON public.email_logs FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+
+-- =============================================================================
+-- 017_gdpr_consent.sql (required for signup — was missing)
+-- =============================================================================
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS gdpr_consent boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS gdpr_consent_at timestamptz;
+COMMENT ON COLUMN public.profiles.gdpr_consent IS 'User accepted Privacy Policy, Terms, and health data processing at signup';
+COMMENT ON COLUMN public.profiles.gdpr_consent_at IS 'Timestamp when GDPR consent was recorded';
+
+-- =============================================================================
+-- 018_hydration_logs.sql
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS public.hydration_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  amount_ml integer NOT NULL,
+  logged_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.hydration_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own hydration logs"
+  ON public.hydration_logs FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS hydration_logs_user_date_idx
+  ON public.hydration_logs (user_id, logged_at DESC);
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS daily_water_goal_ml integer DEFAULT 2500;
+
+-- =============================================================================
+-- 019_body_measurements.sql
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS public.body_measurements (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  measured_at date NOT NULL DEFAULT CURRENT_DATE,
+  waist_cm numeric(5,1),
+  chest_cm numeric(5,1),
+  hips_cm numeric(5,1),
+  left_arm_cm numeric(5,1),
+  right_arm_cm numeric(5,1),
+  left_thigh_cm numeric(5,1),
+  right_thigh_cm numeric(5,1),
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.body_measurements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own measurements"
+  ON public.body_measurements FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS body_measurements_user_date_idx
+  ON public.body_measurements (user_id, measured_at DESC);
+
+-- =============================================================================
+-- 020_protein_logs_notes.sql
+-- =============================================================================
+ALTER TABLE public.protein_logs ADD COLUMN IF NOT EXISTS notes TEXT;
+COMMENT ON COLUMN public.protein_logs.notes IS 'Optional notes (e.g. AI estimation details)';
+
+-- =============================================================================
+-- 021_side_effect_logs.sql
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS public.side_effect_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  logged_date date NOT NULL DEFAULT CURRENT_DATE,
+  nausea_level integer CHECK (nausea_level BETWEEN 0 AND 5),
+  energy_level integer CHECK (energy_level BETWEEN 0 AND 5),
+  appetite_level integer CHECK (appetite_level BETWEEN 0 AND 5),
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, logged_date)
+);
+ALTER TABLE public.side_effect_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own side effect logs"
+  ON public.side_effect_logs FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS side_effect_logs_user_date_idx
+  ON public.side_effect_logs (user_id, logged_date DESC);
+
+-- =============================================================================
+-- 023_expo_push_token_hardening.sql
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.profiles_dedupe_expo_push_token()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.expo_push_token IS NULL THEN
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    UPDATE public.profiles
+    SET expo_push_token = NULL
+    WHERE expo_push_token = NEW.expo_push_token AND id <> NEW.id;
+  ELSIF NEW.expo_push_token IS DISTINCT FROM OLD.expo_push_token THEN
+    UPDATE public.profiles
+    SET expo_push_token = NULL
+    WHERE expo_push_token = NEW.expo_push_token AND id <> NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS profiles_dedupe_expo_push_token ON public.profiles;
+CREATE TRIGGER profiles_dedupe_expo_push_token
+  BEFORE INSERT OR UPDATE OF expo_push_token ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.profiles_dedupe_expo_push_token();
+COMMENT ON COLUMN public.profiles.expo_push_token IS 'Latest Expo push token. Cleared on other users when the same token is registered.';
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+-- =============================================================================
+-- 024_workout_timer_started_at.sql
+-- =============================================================================
+ALTER TABLE public.workout_sessions ADD COLUMN IF NOT EXISTS timer_started_at timestamptz;
+COMMENT ON COLUMN public.workout_sessions.timer_started_at IS 'User pressed Start on active workout; elapsed timer uses this.';
