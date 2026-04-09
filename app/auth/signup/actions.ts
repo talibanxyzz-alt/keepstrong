@@ -1,18 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { getRequestOrigin } from '@/lib/auth/request-origin';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 
 export type SignupActionState = { error: string | null; info: string | null };
-
-async function requestOrigin(): Promise<string> {
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  return `${proto}://${host}`;
-}
 
 export async function signupAction(
   _prevState: SignupActionState,
@@ -43,7 +36,7 @@ export async function signupAction(
   }
 
   const supabase = await createClient();
-  const origin = await requestOrigin();
+  const origin = await getRequestOrigin();
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -84,6 +77,6 @@ export async function signupAction(
 
   return {
     error: null,
-    info: 'Check your email for a confirmation link before signing in.',
+    info: `Almost done — we sent a confirmation link to ${email}. Open that email and tap the link before you sign in. (Check spam / promotions if you don’t see it.)`,
   };
 }

@@ -1,10 +1,11 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import Logo from '@/components/ui/Logo';
-import { Loader2, Eye, EyeOff, Check } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Check, Mail } from 'lucide-react';
 import { signupAction, type SignupActionState } from './actions';
 
 const PASSWORD_REQUIREMENTS = [
@@ -39,6 +40,17 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [gdprAccepted, setGdprAccepted] = useState(false);
+  const lastInfoRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (state.info && state.info !== lastInfoRef.current) {
+      lastInfoRef.current = state.info;
+      toast.success('Confirm your email', {
+        description: state.info,
+        duration: 14_000,
+      });
+    }
+  }, [state.info]);
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
@@ -56,6 +68,20 @@ export default function SignupPage() {
           <p className="mb-8 text-center text-sm text-slate">
             Start tracking protein and preserving muscle — free forever
           </p>
+
+          {state.info ? (
+            <div
+              className="mb-6 flex gap-3 rounded-xl border border-primary/25 bg-primary/10 px-4 py-4 text-left text-sm text-charcoal"
+              role="status"
+              aria-live="polite"
+            >
+              <Mail className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+              <div>
+                <p className="font-semibold text-charcoal">Confirm your email</p>
+                <p className="mt-1 leading-relaxed text-charcoal/90">{state.info}</p>
+              </div>
+            </div>
+          ) : null}
 
           <form action={formAction} className="space-y-4">
             {gdprAccepted ? <input type="hidden" name="gdpr_consent" value="on" /> : null}
@@ -162,12 +188,6 @@ export default function SignupPage() {
             {state.error && (
               <p className="rounded-lg bg-danger-muted px-4 py-3 text-sm text-danger">
                 {state.error}
-              </p>
-            )}
-
-            {state.info && (
-              <p className="rounded-lg bg-primary/10 px-4 py-3 text-sm text-charcoal">
-                {state.info}
               </p>
             )}
 
