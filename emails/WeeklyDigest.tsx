@@ -272,5 +272,3 @@ export const WeeklyDigestEmail = ({ stats, unsubscribeUrl }: WeeklyDigestEmailPr
     </Body>
   </Html>
 );
-
-export default WeeklyDigestEmail;
