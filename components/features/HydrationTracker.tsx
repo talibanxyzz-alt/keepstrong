@@ -5,6 +5,7 @@ import { Droplets } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { localDayUtcRange } from "@/lib/utils/localDate";
+import { logger } from "@/lib/logger";
 
 type HydrationTrackerProps = {
   userId: string;
@@ -23,6 +24,24 @@ export function HydrationTracker({ userId }: HydrationTrackerProps) {
 
     async function loadData() {
       setLoading(true);
+
+      // After signup / OAuth redirect the SSR page can render before the browser
+      // session cookie is readable — wait briefly so RLS sees auth.uid().
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const {
+          data: { session },
+        } = await client.auth.getSession();
+        if (session?.user?.id === userId) break;
+        if (attempt === 5) {
+          if (!cancelled) {
+            setTodayTotal(0);
+            setLoading(false);
+          }
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 80 * (attempt + 1)));
+      }
+
       const { start: dayStart, end: dayEnd } = localDayUtcRange();
 
       const [{ data: logs, error: logsError }, { data: profile, error: profileError }] =
@@ -37,13 +56,32 @@ export function HydrationTracker({ userId }: HydrationTrackerProps) {
             .from("profiles")
             .select("daily_water_goal_ml")
             .eq("id", userId)
-            .single(),
+            .maybeSingle(),
         ]);
 
       if (cancelled) return;
 
       if (logsError) {
-        toast.error("Could not load hydration logs");
+        const err = logsError as { message?: string; code?: string };
+        logger.error("HydrationTracker: failed to load logs", {
+          code: err.code,
+          message: err.message,
+          userId,
+        });
+        const missingRelation =
+          /schema cache|does not exist|relation.*hydration/i.test(err.message ?? "") ||
+          err.code === "PGRST205" ||
+          err.code === "42P01";
+        if (missingRelation) {
+          logger.error("HydrationTracker: hydration_logs missing or not exposed — apply 018_hydration_logs.sql", {
+            userId,
+          });
+        }
+        toast.error(
+          missingRelation
+            ? "Hydration isn’t available yet. If you’re the app owner, apply the hydration_logs migration in Supabase."
+            : "Could not load hydration logs"
+        );
       } else {
         const total = logs?.reduce((sum, l) => sum + l.amount_ml, 0) ?? 0;
         setTodayTotal(total);
